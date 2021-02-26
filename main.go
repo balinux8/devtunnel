@@ -4,16 +4,43 @@ import (
 	"fmt"
 	"github.com/hashicorp/yamux"
 	"github.com/spf13/cobra"
+	"io"
 	"net"
 )
 
+// Config contains configuration for launching a daemon
 type Config struct {
 	Services []ServiceDef // list service definitions
 }
 
+// ServiceDef is a service definition
 type ServiceDef struct {
-	Address string // TCP address
-	Name    string // Name of service
+	Address string // TCP address Eg: localhost:9090
+	Name    string // Name of service Eg: redis/kafka
+}
+
+type server yamux.Stream
+func Decode(stream *yamux.Stream) error {
+	stream.Read()
+	return nil
+}
+
+func runAgent() {
+}
+
+// bridge integrate a stream to underlying service
+func bridge(stream *yamux.Stream, svc ServiceDef) error {
+	// dial to underlying service
+	conn, err := net.Dial("tcp", svc.Address)
+	if err != nil {
+		return err
+	}
+
+	// pairs stream and underlying service together
+	go io.Copy(conn, stream)
+	go io.Copy(stream, conn)
+
+	return nil
 }
 
 func runDaemon(address string) {
@@ -21,7 +48,9 @@ func runDaemon(address string) {
 	if err != nil {
 		panic(err)
 	}
+
 	for {
+		// wait for agents
 		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -45,10 +74,10 @@ func runDaemon(address string) {
 
 					// we can exchange data from here
 					_ = stream
-					_, err = stream.Write([]byte("hello, i'm tunneld"))
-					if err != nil {
-						fmt.Println(err.Error())
-					}
+					// each stream must be paired to underlying service
+					// to do so, client must
+					// specify which service the client want to connect to.
+					// and server must wait for some header to know it
 				}
 			}()
 		}()

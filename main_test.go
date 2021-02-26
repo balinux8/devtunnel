@@ -16,7 +16,7 @@ type echoMessage struct {
 }
 
 // Start starts a tcp server on random port and accepts only one client
-// The tcp server responses any messages received from client
+// The tcp server responses any data received from client
 // It returns the port to which the server is binding
 func (e *echo) Start() int {
 	listener, err := net.Listen("tcp", ":0")
