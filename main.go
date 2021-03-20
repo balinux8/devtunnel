@@ -43,6 +43,11 @@ func bridge(stream *yamux.Stream, svc ServiceDef) error {
 	return nil
 }
 
+// runDaemon listens on address
+// then waits and accepts logical connections.
+// Each logical connection will be pair with underlying service.
+// NOTE: before pairing them, we must specify which service
+// relating to the logical connection it.
 func runDaemon(address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -66,6 +71,7 @@ func runDaemon(address string) {
 			}
 			go func() {
 				for {
+					// accept a logical connection
 					stream, err := session.Accept()
 					if err != nil {
 						fmt.Println(err.Error())
